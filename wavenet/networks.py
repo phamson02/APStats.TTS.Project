@@ -162,12 +162,12 @@ class ResidualStack(nn.Module):
 
         return res_blocks
 
-    def forward(self, x):
+    def forward(self, x, skip_size):
         output = x
         skip_connections = []
 
         for res_block in self.res_blocks:
-            output, skip = res_block(output)
+            output, skip = res_block(output, skip_size)
             skip_connections.append(skip)
         
         return t.stack(skip_connections)
