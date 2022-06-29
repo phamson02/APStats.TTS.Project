@@ -26,12 +26,7 @@ class Wavenet:
         return loss
 
     def _optimizer(self):
-        optimizer = t.optim.Adam(self.net.parameters(), lr=self.lr)
-
-        if t.cuda.is_available():
-            optimizer.cuda()
-
-        return optimizer
+        return t.optim.Adam(self.net.parameters(), lr=self.lr)
 
     def _prepare_for_gpu(self):
         if t.cuda.device_count() > 1:
