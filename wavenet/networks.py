@@ -156,8 +156,7 @@ class ResidualStack(nn.Module):
         dilations = self.build_dilations()
 
         for dilation in dilations:
-            # res_block = self._residual_block(res_channels, skip_channels, dilation)
-            res_block = ResidualBlock(res_channels, skip_channels, dilation)
+            res_block = self._residual_block(res_channels, skip_channels, dilation)
             res_blocks.append(res_block)
 
         return res_blocks
