@@ -51,7 +51,7 @@ class Wavenet:
         loss.backward()
         self.optimizer.step()
 
-        return loss.data[0]
+        return loss.data
 
     def generate(self, inputs):
         """
@@ -81,7 +81,10 @@ class Wavenet:
 
         model_path = self.get_model_path(model_dir, step)
 
-        self.net.load_state_dict(t.load(model_path))
+        if t.cuda.is_available():
+            self.net.load_state_dict(t.load(model_path))
+        else:
+            self.net.load_state_dict(t.load(model_path, map_location=t.device('cpu')))
 
     def save(self, model_dir, step=0):
         print(f"Saving model into {model_dir}")
