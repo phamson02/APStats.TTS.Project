@@ -60,7 +60,6 @@ class DilatedCausalConv1d(nn.Module):
             return output[:, :, :-self.padding]
         return output
 
-
 class ResidualBlock(nn.Module):
     '''Residual Block for WaveNet'''
 
@@ -128,19 +127,9 @@ class ResidualStack(nn.Module):
         self.layer_size = layer_size
         self.stack_size = stack_size
 
-        self.res_blocks = self.stack_res_block(res_channels, skip_channels)
-
-    @staticmethod
-    def _residual_block(res_channels, skip_channels, dilation):
-        block = ResidualBlock(res_channels, skip_channels, dilation)
-
-        if t.cuda.device_count() > 1:
-            block = t.nn.DataParallel(block)
-
-        if t.cuda.is_available():
-            block.cuda()
-
-        return block
+        self.dilations = self.build_dilations()
+        self.res_blocks = t.nn.ModuleList([ResidualBlock(res_channels, skip_channels, dilation)
+                                               for dilation in self.dilations])
 
     def build_dilations(self):
         dilations = []
@@ -150,16 +139,6 @@ class ResidualStack(nn.Module):
                 dilations.append(2 ** l)
 
         return dilations
-
-    def stack_res_block(self, res_channels, skip_channels):
-        res_blocks = []
-        dilations = self.build_dilations()
-
-        for dilation in dilations:
-            res_block = self._residual_block(res_channels, skip_channels, dilation)
-            res_blocks.append(res_block)
-
-        return res_blocks
 
     def forward(self, x, skip_size):
         output = x
@@ -176,19 +155,16 @@ class DenseNet(nn.Module):
     def __init__(self, channels):
         super().__init__()
 
-        self.conv1 = nn.Conv1d(channels, channels, 1)
-        self.conv2 = nn.Conv1d(channels, channels, 1)
-
-        self.relu = nn.ReLU()
-        self.softmax = nn.Softmax(dim=1)
+        self.net = nn.Sequential(
+            nn.Conv1d(channels, channels, 1),
+            nn.ReLU(inplace=True),
+            nn.Conv1d(channels, channels, 1),
+            nn.ReLU(inplace=True),
+            nn.Softmax(dim=1),
+        )
 
     def forward(self, x):
-        output = self.conv1(x)
-        output = self.relu(output)
-        output = self.conv2(output)
-        output = self.relu(output)
-
-        output = self.softmax(output)
+        output = self.net(x)
 
         return output
 
